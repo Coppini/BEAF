@@ -31,26 +31,21 @@ It will spend by average in a machine of 16Gb-RAM and 4 CPUs almost 0.5-1h. Resu
 
 Make a config.file file containing 7 columns, respectively: T1, T2, R1, R2, Ref, Subref and Out.
 On the first column (T1), use 'G' to analyse genomes, 'P' to analyse proteins and 'N' with nucleotide sequences.
-On the second column (T2), depending on the format of the metagnomic data, you may use 'R', for pair-end fastq files; 'I', for 
-a interleaved fastq file; or 'F', for a interleaved fasta file. Regardless of the format you're using, all files must be
+On the second column (T2), depending on the format of the metagnomic data, you may use 'R', for pair-end fastq files; 'I', for an interleaved fastq file; or 'F', for an interleaved fasta file. Regardless of the format you're using, all files must be
 compressed with gzip (.gz).
 On the third column (R1), you must give the complete path to your file (R1 file in the case of pair-end, interleaved in the 
 other two cases), from your main folder to the file itself (example: home/usr/Desktop/BEAF-master/R1_trimmed.fastq.gz).
 On the fourth column (R2), in the case of paired end files, you must give the complete path to the second file (R2), as 
 explained above. For interleaved files, use 'NA' instead.
-On the fifth column (Ref), use the name of the reference genome file (not compressed in fasta format) or protein/gene databank
-(this first database should be less specific and be composed by a large number of sequences, helping program to identify besides
-highly homologous reads, less homologous ones too) file in the Reference folder. If there will be a Reference for protein/gene
-databanks, you can also enter instead just fasta format, other file formats, like: UDB or blastdb.
-On the sixth column (SubRef), use the path to the folder containing subreferences for protein families, if any. If using genome,
-use 'NA' instead.
+On the fifth column (Ref), use the name of the reference genome file (not compressed and in fasta format) or protein/gene databank file in the Reference_seqs folder (this first database should be less specific and be composed by a large number of sequences, helping program to identify besides highly homologous reads, less homologous ones too). If there will be a Reference for protein/gene databanks, you can use a UDB file instead of fasta.
+On the sixth column (SubRef), use the name of the folder containing subreferences for protein/gene families, which should be placed inside the Reference_seqs folder as well. For proteins and genes, subreferences are a requirement: if you do not wish to use one, simply copy the reference fasta file and use it as subreference (placing it inside a folder containing only that file, inside the Reference_seqs folder, and indicating that folder as your subreference). If using genome, simply use 'NA' instead.
 On the seventh column (Out), use the desired name for the output folder generated from that file (example: Metaspot1_Ecoli).
 Don't use spaces nor slashes in the name.
 Be careful to not leave any empty lines in final file.
 
 Example:
 
-N	I	/home/usr/Desktop/BEAF1011.65_master/Test_sample/Alistipes_putredinis_DSM_17216.fna.fastq.gz	NA
+N	I	/home/usr/Desktop/BEAF_master/Test_sample/Alistipes_putredinis_DSM_17216.fna.fastq.gz	NA
 DNA_pol.fasta	DNA_pol	1D
 
 -Execute the batch script: 
@@ -59,11 +54,7 @@ DNA_pol.fasta	DNA_pol	1D
 
 - Changing parameters of run
 
-User can change every run parameter directly in shell script file, since blast/usearch identity or coverage parameters to keep or
-not keep formatted reference databases. You can choose between blastn and megablast when finding against gene families, it could
-in some cases speed up the process. All possible changes are indicated over script, but unless you have a good notion of shell
-language we strongly advice to not change any parameter. If some parameters are changed, indicates in your "Material and Methods"
-section the new parameters. If nothing was changed just cite these parameters as "default".
+User can change every run parameter directly in shell script file, since blast/usearch identity or coverage parameters to keep or not keep formatted reference databases. All possible changes are indicated over script, but unless you have a good notion of shell language we strongly advice to not change any parameter. If some parameters are changed, indicate in your "Material and Methods" section the new parameters. If nothing was changed just cite these parameters as "default".
 
 - Results 
 
@@ -72,7 +63,7 @@ Results are given inside OUTPUT folder. In each output, previously designed by u
 .....For any option:
 
 /home/usr/PATHWAY_TO_HERE/BEAF-master
-	File containing the summary of all runs: time.log
+	File containing the summary of all runs: Log.tsv
 
 .....For genome binning:
 
@@ -89,29 +80,40 @@ Results are given inside OUTPUT folder. In each output, previously designed by u
 /home/usr/PATHWAY_TO_HERE/BEAF-master/OUTPUT/$Out
 	Folder containing the FASTQC results of trimming before files merging: FASTQCresults
 	File containing the summary of analysis: Log.txt
-	File containing the reads identified as hits: hits.fa.gz
+	File containing only the SubReference table: SubRefs.tsv
+	File containing the reads identified as hits: hits.fasta.gz
 	Folder containing the Blastx/n results: blast_hits
 	Folder containing sequences after Blast-filtering: read_hits
 	Folder containing contigs after assembly: contigs
 	Folder containing identified orf's by contigs file: ORFs
+
+.....Errors:
+/home/usr/PATHWAY_TO_HERE/BEAF-master/OUTPUT/Errors 
+	Any Output that could not find a single contig will be moved to this folder (in an $Out folder inside the Errors folder)
+	Notice that these outputs are not necessarily errors, as they can simply be outputs that had few hits
+	Sometimes, though, the SPADES assembly runs into problems, and cannot properly bin contigs
+	For each folder in the Errors folder, it is recommended to try running BEAF again for that set of Sample/Reference in case that the Log.txt inside the output folder shows a high number of hits
+	Inside the Errors folder, you can also find a file named 'config.redo'. If you want to retry for all files which presented an error, just move this file to the BEAF-master folder and rename it to config.file. It is already formatted in the config.file format, and contains only the information to retry the outputs that BEAF couldn't find contigs for. Remember that, if the Log.txt actually shows a low number of hits, this will probably not be an error, but just an indication of low homology.
+
+
+- Continue Function
+
+In case BEAF is stopped abruptly (as in a power surge or in any other case the computer or program would shut down unexpectedly), the program is able to continue the last run from the point it stopped. It will usually work well in that sense, as it is programmed in modules and will continue from the last module before it stopped. Be aware that by using the continue function, BEAF will not be able to calculate the time the run took properly (and the same applies if the computer is put in hibernation mode during it's running). 
+
+Alternatively, when using a long list of sets of sample/reference in contigs.file, you can simply delete CR.step, CR.mode and the Buckets folder (if present) from the BEAF-master folder, and use the continue function. This will make it so that the time of running is accurate, and also minimize the chance of errors (although it is already very small for this 'continue function').
 
 
 ```
 
 # Speeding up the process
 
-(1) To speed up all process, you can disabilitate some functions over the script, this will be done running script
-soft_BEAF10.11.65.sh instead BEAF.sh. - This pipeline does not make the fastq file trimming, quality test of fastq files,
-assembly retry (it would take small kmers scenario which can take more time instead for genomes binning), QUAST assessment or
-ORFs prediction;
+(1) To speed up all process, you can disabilitate some functions over the script, this will be done running script soft_BEAF10.11.65.sh instead BEAF.sh. - This pipeline does not make the fastq file trimming, quality test of fastq files, assembly retry (it would take small kmers scenario which can take more time instead for genomes binning), QUAST assessment or ORFs prediction;
 
 	$ cd /PATHWAY_TO_HERE/BEAF-master
 	$ ./BEAF.sh
 	Option -s
 
-(2) Alternativelly, you can run our helper script named optimizer.sh, already included. We strongly recommend run this script
-when running genomes binning function. It will request user password, since it works as a constant renicer device. It should be
-run in a new terminal, so your system will work with two independent terminals.
+(2) Alternativelly, you can run our helper script named optimizer.sh, already included. We strongly recommend running this script when running genomes binning function. It will request user password, since it works as a constant renicer device. It should be run in a new terminal, so your system will work with two independent terminals.
 
 	$(1) cd /PATHWAY_TO_HERE/BEAF-master
 	$(1) ./BEAF.sh
@@ -124,8 +126,7 @@ run in a new terminal, so your system will work with two independent terminals.
 # Contact and License
 
 All bugs should be reported to: celio.diasjunior@gmail.com or guilherme.coppini@hotmail.com. 
-Please cite us: "Santos-Júnior, CD et al. BEAF: An automated pipeline to referenced genome and protein or gene families binning
-and assembly of next generation sequencing data. (Under publishing)".
+Please cite us: "Santos-Júnior, CD et al. BEAF: An automated pipeline to referenced genome and protein or gene families binning and assembly of next generation sequencing data. (Under publishing)".
 Rights between any third party software are not in claim, they continue under rights of original distribution.
 
 ```
